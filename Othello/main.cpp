@@ -2,6 +2,26 @@
 #include <cmath>
 #include <iostream>
 #include <string>
+
+#define BITBOARD unsigned long long 
+
+void drawBoard(BITBOARD board, sf::Sprite ** table, sf::RenderWindow &window)
+{
+	BITBOARD shift = 0x0000000000000001;
+	int bitNbr = 0;
+	while (board!=0)
+	{
+		if ((shift&board) != 0)
+		{
+			//if bit is set then:
+			window.draw(*table[bitNbr]);
+		}
+		board = board >> 1;
+		bitNbr += 1;
+	}
+	
+}
+
 void createPieces(sf::Sprite ** table)
 {
 	for(int x = 0; x<64 ;x++)
@@ -31,9 +51,6 @@ void setPieces(const char * filename, sf::Texture &tex,sf::Sprite ** table)
 		{
 			
 		table[x]->setPosition(o,u);
-
-		std::cout<<"poz o:"<<o<<" u: "<<u<<"\n";
-
 		o+=50;
 
 		}
@@ -50,24 +67,23 @@ int main()
 
 	sf::Texture black_texture;
 	sf::Texture white_texture;
-	
+	sf::Texture board_texture;
+
 	sf::Sprite ** black_table = new sf::Sprite*[64];
 	sf::Sprite ** white_table = new sf::Sprite*[64];
+	sf::Sprite boardImage;
+
+	if(!board_texture.loadFromFile("board1.png"))
+		std::cout<<"Unable to load board_texture \n";
+	boardImage.setTexture(board_texture);
 
 	createPieces(black_table);
 	createPieces(white_table);
 	setPieces(filename_black.c_str(),black_texture, black_table);
 	setPieces(filename_white.c_str(),white_texture, white_table);
 
-	sf::Texture board_texture;
-	sf::Sprite boardImage;
-	if(!board_texture.loadFromFile("board1.png"))
-		std::cout<<"Unable to load board_texture \n";
-
-	boardImage.setTexture(board_texture);
-	
-
-
+	BITBOARD START_POSITION_white = 0x810000000;
+	BITBOARD START_POSITION_black = 0x1008000000;
 
 
     while( window.isOpen() )
@@ -216,13 +232,15 @@ int main()
 		window.draw(*white_table[62]);
 		window.draw(*white_table[63]);
 		*/
-		window.draw(*black_table[27]);
-		window.draw(*white_table[28]);
-		window.draw(*black_table[36]);
-		window.draw(*white_table[35]);
+		
+	
+	
+	drawBoard(START_POSITION_black, black_table, window);
+	drawBoard(START_POSITION_white, white_table, window);
+	
 		window.display();
+		
 
-
-    } //while
+    } 
     return 0;
 }
