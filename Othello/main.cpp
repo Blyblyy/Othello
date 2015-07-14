@@ -2,8 +2,90 @@
 #include <cmath>
 #include <iostream>
 #include <string>
+#include <list>
 
 #define BITBOARD unsigned long long 
+
+BITBOARD showMyValidMoves(BITBOARD myBoard, BITBOARD opponentBoard)
+{
+	
+	BITBOARD all = myBoard | opponentBoard;
+	BITBOARD empty = ~all;
+	BITBOARD downMask = 0xFFFFFFFFFFFFFF;
+	BITBOARD upMask = 0xFFFFFFFFFFFFFF00;
+	BITBOARD rightMask = 0xFEFEFEFEFEFEFEFE;
+	BITBOARD leftMask = 0x7F7F7F7F7F7F7F7F;
+
+	BITBOARD validMoves1 = 0UL, validMoves2 = 0UL, validMoves3 = 0UL, validMoves4 = 0UL, validMoves5 = 0UL, validMoves6 = 0UL, validMoves7 = 0UL, validMoves8 = 0UL;
+	
+	// DOWN
+	BITBOARD potentialMoves1 = (myBoard >> 8) & downMask & opponentBoard;
+	while (potentialMoves1 != 0UL)
+	{
+		BITBOARD tmp1 = (potentialMoves1 >> 8) & downMask;
+		validMoves1 = validMoves1| (tmp1&empty);
+		potentialMoves1=tmp1&opponentBoard;	
+	}
+	//UP
+	BITBOARD potentialMoves2 = (myBoard << 8) & upMask & opponentBoard ;
+	while (potentialMoves2 != 0x0000000000000000)
+	{	
+		BITBOARD tmp = (potentialMoves2 << 8) & upMask; 
+		validMoves2 = validMoves2|(tmp&empty);
+		potentialMoves2 = tmp&opponentBoard;
+	}
+	//LEFT
+	BITBOARD potentialMoves3 = (myBoard >> 1) & leftMask & opponentBoard;
+	while (potentialMoves3 != 0x0000000000000000)
+	{
+		BITBOARD tmp = (potentialMoves3 >> 1) & leftMask;
+		validMoves3 = validMoves3|(tmp&empty);
+		potentialMoves3 = tmp & opponentBoard;
+	}
+	//RIGHT
+	BITBOARD potentialMoves4 = (myBoard << 1) & rightMask & opponentBoard;
+	while (potentialMoves4 != 0x0000000000000000)
+	{
+		BITBOARD tmp = (potentialMoves4 << 1) & rightMask ;
+		validMoves4 = validMoves4 | (tmp&empty);
+		potentialMoves4 = tmp & opponentBoard;
+	}
+	//UPRIGHT
+	BITBOARD potentialMoves5 = (myBoard << 9) & rightMask & upMask & opponentBoard;
+	while (potentialMoves5 != 0x0000000000000000)
+	{
+		BITBOARD tmp = (potentialMoves5 << 9) & rightMask & upMask;
+		validMoves5 = validMoves5 | (tmp&empty);
+		potentialMoves5 = tmp & opponentBoard;
+	}
+	//UPLEFT
+	BITBOARD potentialMoves6 = (myBoard << 7) & leftMask & upMask & opponentBoard;
+	while (potentialMoves6 != 0x0000000000000000)
+	{
+		BITBOARD tmp = (potentialMoves6 << 7) & leftMask & upMask;
+		validMoves6 = validMoves6 | (tmp&empty);
+		potentialMoves6 = tmp & opponentBoard;
+	}
+	//DOWNLEFT
+	BITBOARD potentialMoves7 = (myBoard >> 9) & leftMask & downMask & opponentBoard;
+	while (potentialMoves7 != 0x0000000000000000)
+	{
+		BITBOARD tmp = (potentialMoves7 >> 9) & leftMask&downMask;
+		validMoves7 = validMoves7 | (tmp&empty);
+		potentialMoves7 = tmp & opponentBoard;
+	}
+	//DOWNRIGHT
+	BITBOARD potentialMoves8 = (myBoard >> 7) & rightMask & downMask & opponentBoard;
+	while (potentialMoves8 != 0x0000000000000000)
+	{
+		BITBOARD tmp = (potentialMoves8 >> 7) & rightMask&downMask;
+		validMoves8 = validMoves8 | (tmp&empty);
+		potentialMoves8 = tmp & opponentBoard;
+	}
+
+	BITBOARD allValidMoves = validMoves1| validMoves2 | validMoves3 | validMoves4| validMoves5 | validMoves6 | validMoves7 | validMoves8;
+	return allValidMoves;
+}
 
 void drawBoard(BITBOARD board, sf::Sprite ** table, sf::RenderWindow &window)
 {
@@ -19,7 +101,6 @@ void drawBoard(BITBOARD board, sf::Sprite ** table, sf::RenderWindow &window)
 		board = board >> 1;
 		bitNbr += 1;
 	}
-	
 }
 
 void createPieces(sf::Sprite ** table)
@@ -36,7 +117,6 @@ void setPieces(const char * filename, sf::Texture &tex,sf::Sprite ** table)
 	{
 		std::cout<<"Unable to load texture! \n";
 	}
-
 	for(int x = 0; x<64 ;x++)
 	{
 	table[x]->setTexture(tex);
@@ -49,10 +129,8 @@ void setPieces(const char * filename, sf::Texture &tex,sf::Sprite ** table)
 		o=0;
 		for(int x = y; x<y+8; x++)
 		{
-			
 		table[x]->setPosition(o,u);
 		o+=50;
-
 		}
 	u=u-50;
 	}
@@ -64,13 +142,21 @@ int main()
 
 	std::string filename_black = "black1.png";
 	std::string filename_white = "white1.png";
+	std::string filename_black_s = "black_s.png";
+	std::string filename_white_s = "white_s.png";
 
 	sf::Texture black_texture;
 	sf::Texture white_texture;
+	sf::Texture black_texture_s;
+	sf::Texture white_texture_s;
 	sf::Texture board_texture;
 
 	sf::Sprite ** black_table = new sf::Sprite*[64];
 	sf::Sprite ** white_table = new sf::Sprite*[64];
+
+	sf::Sprite ** black_table_s = new sf::Sprite*[64];
+	sf::Sprite ** white_table_s = new sf::Sprite*[64];
+
 	sf::Sprite boardImage;
 
 	if(!board_texture.loadFromFile("board1.png"))
@@ -79,12 +165,15 @@ int main()
 
 	createPieces(black_table);
 	createPieces(white_table);
-	setPieces(filename_black.c_str(),black_texture, black_table);
-	setPieces(filename_white.c_str(),white_texture, white_table);
+	createPieces(black_table_s);
+	createPieces(white_table_s);
+	setPieces(filename_black.c_str(),black_texture,black_table);
+	setPieces(filename_white.c_str(),white_texture,white_table);
+	setPieces(filename_black_s.c_str(),black_texture_s,black_table_s);
+	setPieces(filename_white_s.c_str(), white_texture_s, white_table_s);
 
 	BITBOARD START_POSITION_white = 0x810000000;
 	BITBOARD START_POSITION_black = 0x1008000000;
-
 
     while( window.isOpen() )
     {
@@ -99,145 +188,13 @@ int main()
         } 
         //window.clear();
 		window.draw(boardImage);
-		/*
-		
-		window.draw(*black_table[0]);
-		window.draw(*black_table[1]);
-		window.draw(*black_table[2]);
-		window.draw(*black_table[3]);
-		window.draw(*black_table[4]);
-		window.draw(*black_table[5]);
-		window.draw(*black_table[6]);
-		window.draw(*black_table[7]);
-		window.draw(*black_table[8]);
-		window.draw(*black_table[9]);
-		window.draw(*black_table[10]);
-		window.draw(*black_table[11]);
-		window.draw(*black_table[12]);
-		window.draw(*black_table[13]);
-		window.draw(*black_table[14]);
-		window.draw(*black_table[15]);
-		window.draw(*black_table[16]);
-		window.draw(*black_table[17]);
-		window.draw(*black_table[18]);
-		window.draw(*black_table[19]);
-		window.draw(*black_table[20]);
-		window.draw(*black_table[21]);
-		window.draw(*black_table[22]);
-		window.draw(*black_table[23]);
-		window.draw(*black_table[24]);
-		window.draw(*black_table[25]);
-		window.draw(*black_table[26]);
-		window.draw(*black_table[27]);
-		window.draw(*black_table[28]);
-		window.draw(*black_table[29]);
-		window.draw(*black_table[30]);
-		window.draw(*black_table[31]);
-		window.draw(*black_table[32]);
-		window.draw(*black_table[33]);
-		window.draw(*black_table[34]);
-		window.draw(*black_table[35]);
-		window.draw(*black_table[36]);
-		window.draw(*black_table[37]);
-		window.draw(*black_table[38]);
-		window.draw(*black_table[39]);
-		window.draw(*black_table[40]);
-		window.draw(*black_table[41]);
-		window.draw(*black_table[42]);
-		window.draw(*black_table[43]);
-		window.draw(*black_table[44]);
-		window.draw(*black_table[45]);
-		window.draw(*black_table[46]);
-		window.draw(*black_table[47]);
-		window.draw(*black_table[48]);
-		window.draw(*black_table[49]);
-		window.draw(*black_table[50]);
-		window.draw(*black_table[51]);
-		window.draw(*black_table[52]);
-		window.draw(*black_table[53]);
-		window.draw(*black_table[54]);
-		window.draw(*black_table[55]);
-		window.draw(*black_table[56]);
-		window.draw(*black_table[57]);
-		window.draw(*black_table[58]);
-		window.draw(*black_table[59]);
-		window.draw(*black_table[60]);
-		window.draw(*black_table[61]);
-		window.draw(*black_table[62]);
-		window.draw(*black_table[63]);
-		*/
-		/*
-		window.draw(*white_table[0]);
-		window.draw(*white_table[1]);
-		window.draw(*white_table[2]);
-		window.draw(*white_table[3]);
-		window.draw(*white_table[4]);
-		window.draw(*white_table[5]);
-		window.draw(*white_table[6]);
-		window.draw(*white_table[7]);
-		window.draw(*white_table[8]);
-		window.draw(*white_table[9]);
-		window.draw(*white_table[10]);
-		window.draw(*white_table[11]);
-		window.draw(*white_table[12]);
-		window.draw(*white_table[13]);
-		window.draw(*white_table[14]);
-		window.draw(*white_table[15]);
-		window.draw(*white_table[16]);
-		window.draw(*white_table[17]);
-		window.draw(*white_table[18]);
-		window.draw(*white_table[19]);
-		window.draw(*white_table[20]);
-		window.draw(*white_table[21]);
-		window.draw(*white_table[22]);
-		window.draw(*white_table[23]);
-		window.draw(*white_table[24]);
-		window.draw(*white_table[25]);
-		window.draw(*white_table[26]);
-		window.draw(*white_table[27]);
-		window.draw(*white_table[28]);
-		window.draw(*white_table[29]);
-		window.draw(*white_table[30]);
-		window.draw(*white_table[31]);
-		window.draw(*white_table[32]);
-		window.draw(*white_table[33]);
-		window.draw(*white_table[34]);
-		window.draw(*white_table[35]);
-		window.draw(*white_table[36]);
-		window.draw(*white_table[37]);
-		window.draw(*white_table[38]);
-		window.draw(*white_table[39]);
-		window.draw(*white_table[40]);
-		window.draw(*white_table[41]);
-		window.draw(*white_table[42]);
-		window.draw(*white_table[43]);
-		window.draw(*white_table[44]);
-		window.draw(*white_table[45]);
-		window.draw(*white_table[46]);
-		window.draw(*white_table[47]);
-		window.draw(*white_table[48]);
-		window.draw(*white_table[49]);
-		window.draw(*white_table[50]);
-		window.draw(*white_table[51]);
-		window.draw(*white_table[52]);
-		window.draw(*white_table[53]);
-		window.draw(*white_table[54]);
-		window.draw(*white_table[55]);
-		window.draw(*white_table[56]);
-		window.draw(*white_table[57]);
-		window.draw(*white_table[58]);
-		window.draw(*white_table[59]);
-		window.draw(*white_table[60]);
-		window.draw(*white_table[61]);
-		window.draw(*white_table[62]);
-		window.draw(*white_table[63]);
-		*/
-		
-	
-	
+
 	drawBoard(START_POSITION_black, black_table, window);
 	drawBoard(START_POSITION_white, white_table, window);
-	
+	//drawBoard(0x830040000, white_table, window);
+	BITBOARD test = showMyValidMoves(START_POSITION_black, START_POSITION_white);
+	drawBoard(test, black_table_s, window);
+
 		window.display();
 		
 
