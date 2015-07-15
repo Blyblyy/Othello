@@ -6,6 +6,161 @@
 
 #define BITBOARD unsigned long long 
 
+BITBOARD flipPieces(BITBOARD boardA, BITBOARD boardB, BITBOARD moveOfA)
+{
+	
+	BITBOARD all = boardA | boardB| moveOfA;
+	BITBOARD empty = ~all;
+	BITBOARD downMask = 0xFFFFFFFFFFFFFF;
+	BITBOARD upMask = 0xFFFFFFFFFFFFFF00;
+	BITBOARD rightMask = 0xFEFEFEFEFEFEFEFE;
+	BITBOARD leftMask = 0x7F7F7F7F7F7F7F7F;
+	BITBOARD allPotentialFlips1 = 0UL, allPotentialFlips2 = 0UL, allPotentialFlips3 = 0UL, allPotentialFlips4 = 0UL, allPotentialFlips5 = 0UL, allPotentialFlips6 = 0UL, allPotentialFlips7 = 0UL, allPotentialFlips8 = 0UL;
+	BITBOARD validFlips1 = 0L, validFlips2 = 0L, validFlips3 = 0L, validFlips4 = 0L, validFlips5 = 0L, validFlips6 = 0L, validFlips7 = 0L, validFlips8 = 0L;
+	BITBOARD validFlipsAll;
+	//DOWN
+	BITBOARD potentialFlip1 = (moveOfA >> 8) & downMask & boardB;
+	while (potentialFlip1 != 0UL)
+	{
+		allPotentialFlips1 = allPotentialFlips1 | potentialFlip1;
+		BITBOARD tmp = (potentialFlip1 >> 8) & downMask;
+		if ((tmp&empty)!=0UL)
+		{
+			break;
+		}
+		if ((tmp&boardA) != 0UL)
+		{
+			validFlips1 = allPotentialFlips1;
+			break;
+		}
+		potentialFlip1 = tmp;
+	}
+	//UP
+	BITBOARD potentialFlip2 = (moveOfA << 8) & upMask & boardB;
+	while (potentialFlip2 != 0UL)
+	{
+		allPotentialFlips2 = allPotentialFlips2 | potentialFlip2;
+		BITBOARD tmp = (potentialFlip2 << 8) & upMask;
+		if ((tmp&empty) != 0UL)
+		{
+			break;
+		}
+		if ((tmp&boardA) != 0UL)
+		{
+			validFlips2 = allPotentialFlips2;
+			break;
+		}
+		potentialFlip2 = tmp;
+	}
+	//LEFT
+	BITBOARD potentialFlip3 = (moveOfA >> 1) & leftMask & boardB;
+	while (potentialFlip3 != 0UL)
+	{
+		allPotentialFlips3 = allPotentialFlips3 | potentialFlip3;
+		BITBOARD tmp = (potentialFlip3 >> 1) & leftMask;
+		if ((tmp&empty) != 0UL)
+		{
+			break;
+		}
+		if ((tmp&boardA) != 0UL)
+		{
+			validFlips3 = allPotentialFlips3;
+			break;
+		}
+		potentialFlip3 = tmp;
+	}
+	//RIGHT
+	BITBOARD potentialFlip4 = (moveOfA << 1) & rightMask & boardB;
+	while (potentialFlip4 != 0UL)
+	{
+		allPotentialFlips4 = allPotentialFlips4 | potentialFlip4;
+		BITBOARD tmp = (potentialFlip4 << 1) & rightMask;
+		if ((tmp&empty) != 0UL)
+		{
+			break;
+		}
+		if ((tmp&boardA) != 0UL)
+		{
+			validFlips4 = allPotentialFlips4;
+			break;
+		}
+		potentialFlip4 = tmp;
+	}
+	//UPRIGHT
+	BITBOARD potentialFlip5 = (moveOfA << 9) & upMask & rightMask & boardB;
+	while (potentialFlip5 != 0UL)
+	{
+		allPotentialFlips5 = allPotentialFlips5 | potentialFlip5;
+		BITBOARD tmp = (potentialFlip5 << 9) & upMask & rightMask;
+		if ((tmp&empty) != 0UL)
+		{
+			break;
+		}
+		if ((tmp&boardA) != 0UL)
+		{
+			validFlips5 = allPotentialFlips5;
+			break;
+		}
+		potentialFlip5 = tmp;
+	}
+	//UPLEFT
+	BITBOARD potentialFlip6 = (moveOfA << 7) & upMask & leftMask & boardB;
+	while (potentialFlip6 != 0UL)
+	{
+		allPotentialFlips6 = allPotentialFlips6 | potentialFlip6;
+		BITBOARD tmp = (potentialFlip6 << 7) & upMask & leftMask;
+		if ((tmp&empty) != 0UL)
+		{
+			break;
+		}
+		if ((tmp&boardA) != 0UL)
+		{
+			validFlips6 = allPotentialFlips6;
+			break;
+		}
+		potentialFlip6 = tmp;
+	}
+	//DOWNLEFT
+	BITBOARD potentialFlip7 = (moveOfA >> 9) & downMask & leftMask & boardB;
+	while (potentialFlip7 != 0UL)
+	{
+		allPotentialFlips7 = allPotentialFlips7 | potentialFlip7;
+		BITBOARD tmp = (potentialFlip7 >> 9) & downMask & leftMask;
+		if ((tmp&empty) != 0UL)
+		{
+			break;
+		}
+		if ((tmp&boardA) != 0UL)
+		{
+			validFlips7 = allPotentialFlips7;
+			break;
+		}
+		potentialFlip7 = tmp;
+	}
+	//DOWNRIGHT
+	BITBOARD potentialFlip8 = (moveOfA >> 7) & downMask & rightMask & boardB;
+	while (potentialFlip8 != 0UL)
+	{
+		allPotentialFlips8 = allPotentialFlips8 | potentialFlip8;
+		BITBOARD tmp = (potentialFlip8 >> 7) & downMask & rightMask;
+		if ((tmp&empty) != 0UL)
+		{
+			break;
+		}
+		if ((tmp&boardA) != 0UL)
+		{
+			validFlips8 = allPotentialFlips8;
+			break;
+		}
+		potentialFlip8 = tmp;
+	}
+
+	
+	validFlipsAll= validFlips1 | validFlips2 | validFlips3 | validFlips4 | validFlips5 | validFlips6 | validFlips7 | validFlips8 ; 
+	//return validFlipsAll;//only return positions of pieces to flip
+
+	return (boardA | validFlipsAll | moveOfA); //returns the new board A
+}
 BITBOARD showMyValidMoves(BITBOARD myBoard, BITBOARD opponentBoard)
 {
 	
@@ -175,6 +330,8 @@ int main()
 	BITBOARD START_POSITION_white = 0x810000000;
 	BITBOARD START_POSITION_black = 0x1008000000;
 
+	BITBOARD lolo = flipPieces(0x3E2222223E00,0x1C141C0000,0x8000000);
+
     while( window.isOpen() )
     {
         sf::Event event;
@@ -189,11 +346,17 @@ int main()
         //window.clear();
 		window.draw(boardImage);
 
-	drawBoard(START_POSITION_black, black_table, window);
-	drawBoard(START_POSITION_white, white_table, window);
-	//drawBoard(0x830040000, white_table, window);
-	BITBOARD test = showMyValidMoves(START_POSITION_black, START_POSITION_white);
-	drawBoard(test, black_table_s, window);
+	//drawBoard(START_POSITION_black, black_table, window);
+	//drawBoard(START_POSITION_white, white_table, window);
+		//drawBoard(0x80000000000, black_table, window);
+		
+		drawBoard(0x3E2222223E00 & (~lolo), white_table, window);
+		drawBoard(lolo, black_table, window);
+	//BITBOARD test = showMyValidMoves(START_POSITION_black, START_POSITION_white);
+
+	
+
+//	drawBoard(test, black_table_s, window);
 
 		window.display();
 		
