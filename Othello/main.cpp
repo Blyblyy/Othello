@@ -3,8 +3,27 @@
 #include <iostream>
 #include <string>
 #include <list>
+#include <vector>
+#include "mouse.h"
+#include <windows.h>   
+#include <algorithm>
 
-#define BITBOARD unsigned long long 
+int minMove(BITBOARD myBoard, BITBOARD opponentBoard, int maxDepth, int currentDepth);
+int maxMove(BITBOARD myBoard, BITBOARD opponentBoard, int maxDepth, int currentDepth);
+int countPoints(BITBOARD board)
+{
+	BITBOARD shift = 0x0000000000000001;
+	int points = 0;
+	while (board != 0)
+	{
+		if((shift&board) != 0)
+		{
+			++points;
+		}
+		board = board >> 1;
+	}
+	return points;
+}
 
 BITBOARD flipPieces(BITBOARD boardA, BITBOARD boardB, BITBOARD moveOfA)
 {
@@ -185,9 +204,9 @@ BITBOARD showMyValidMoves(BITBOARD myBoard, BITBOARD opponentBoard)
 	BITBOARD potentialMoves2 = (myBoard << 8) & upMask & opponentBoard ;
 	while (potentialMoves2 != 0x0000000000000000)
 	{	
-		BITBOARD tmp = (potentialMoves2 << 8) & upMask; 
-		validMoves2 = validMoves2|(tmp&empty);
-		potentialMoves2 = tmp&opponentBoard;
+		BITBOARD tmp2 = (potentialMoves2 << 8) & upMask; 
+		validMoves2 = validMoves2|(tmp2&empty);
+		potentialMoves2 = tmp2&opponentBoard;
 	}
 	//LEFT
 	BITBOARD potentialMoves3 = (myBoard >> 1) & leftMask & opponentBoard;
@@ -239,6 +258,8 @@ BITBOARD showMyValidMoves(BITBOARD myBoard, BITBOARD opponentBoard)
 	}
 
 	BITBOARD allValidMoves = validMoves1| validMoves2 | validMoves3 | validMoves4| validMoves5 | validMoves6 | validMoves7 | validMoves8;
+
+	//std::cout << "obliczam valid moves" << std::hex << allValidMoves << "\n";
 	return allValidMoves;
 }
 
@@ -260,13 +281,13 @@ void drawBoard(BITBOARD board, sf::Sprite ** table, sf::RenderWindow &window)
 
 void createPieces(sf::Sprite ** table)
 {
-	for(int x = 0; x<64 ;x++)
+	for(int x = 0; x<64 ;++x)
 	{
-	table[x] = new sf::Sprite;
+		table[x] = new sf::Sprite;
 	}
 }
 
-void setPieces(const char * filename, sf::Texture &tex,sf::Sprite ** table)
+void setPieces(const char* filename, sf::Texture& tex,sf::Sprite** table)
 {
 	if(!tex.loadFromFile(filename))
 	{
@@ -274,7 +295,7 @@ void setPieces(const char * filename, sf::Texture &tex,sf::Sprite ** table)
 	}
 	for(int x = 0; x<64 ;x++)
 	{
-	table[x]->setTexture(tex);
+		table[x]->setTexture(tex);
 	}
 	
 	int o = 0;
@@ -291,8 +312,269 @@ void setPieces(const char * filename, sf::Texture &tex,sf::Sprite ** table)
 	}
 }
 
+BITBOARD minMax(BITBOARD computerBoard, BITBOARD playerBoard, int maxDepth)
+{
+	std::cout << "into MINMAX \n";
+	BITBOARD movesBoard = showMyValidMoves(computerBoard, playerBoard); //ruchy dla kompa
+	std::cout << std::hex << "Moves board (all possible moves)" << movesBoard << " \n";
+	BITBOARD shift = 0x0000000000000001;
+	std::vector<int> scoreList;
+	std::vector<BITBOARD> selectedMovesList;
+	std::vector<BITBOARD> movesList;
+	std::cout << "movesList : \n";
+	while (shift != 0)
+	{
+		if ((shift&movesBoard) != 0)
+		{
+			movesList.push_back(shift);
+			std::cout << std::hex << shift << " \n";
+		}
+		shift = shift << 1;
+	}
+	std::cout << "zaraz bedzie petla \n";
+
+	for(auto& elem : movesList)
+	{
+		selectedMovesList.push_back(elem);
+		scoreList.push_back(minMove(flipPieces(computerBoard, playerBoard, elem), (playerBoard&~flipPieces(computerBoard, playerBoard, elem)), maxDepth, 1));
+	}
+	//for (int i = 0; i < movesList.size(); i++)
+	//{
+	//	std::cout << i <<"\n";
+	//	std::cout << "w petli: \n";
+	//	selectedMovesList.push_back(movesList[i]);
+	//	std::cout << " ###### zaraz bedzie wywolany min dla :" << movesList[i] << "  ####### \n \n";
+	//	scoreList.push_back(minMove(flipPieces(computerBoard, playerBoard, movesList[i]), (playerBoard&~flipPieces(computerBoard, playerBoard, movesList[i])), maxDepth, 1));
+	//}
+	std::cout << "koniec petli \n";
+	int bestScore = 0;
+	int position = 0;
+	int wantedPosition = 0;
+	//for(auto x = scoreList.begin(); ...)
+	for (std::vector<int>::iterator it = scoreList.begin(); it != scoreList.end(); it++) {
+		std::cout << *it << "\n";
+		
+		if (*it > bestScore)
+		{	
+			bestScore = *it;
+			wantedPosition = position;
+		}
+		/* std::cout << *it; ... */
+		position += 1;
+	}
+	/*
+	for (int i : scoreList)
+	{
+		position++;
+		if (i > bestScore)
+		{
+
+			bestScore = i;
+			wantedPosition = position;
+		}
+	}
+	*/
+	//std::cout << selectedMovesList[wantedPosition] << " \n";
+	return wantedPosition >= selectedMovesList.size() ? 0 : selectedMovesList[wantedPosition];
+	//return 0x20000000;
+}
+
+int minMove(BITBOARD computerBoard, BITBOARD playerBoard, int maxDepth, int currentDepth)
+{
+	std::cout << "into MIN current depth " << currentDepth << "max depth" << maxDepth << " \n";
+	if (maxDepth == currentDepth)
+	{
+		std::cout << "max depth in min! \n";
+		std::cout << countPoints(playerBoard) << "\n";
+		std::cout <<std::hex<<"player b " << playerBoard << "\n";
+		std::cout << std::hex <<"computer b" << computerBoard << "\n";
+		return countPoints(playerBoard);
+	}
+	int result = 100000;
+	BITBOARD movesBoard = showMyValidMoves(playerBoard,computerBoard);
+	//BITBOARD movesBoard = showMyValidMoves(computerBoard, playerBoard);
+	BITBOARD shift = 0x0000000000000001;
+	std::vector<BITBOARD> movesList;
+	while (shift != 0)
+	{
+		if ((shift&movesBoard) != 0)
+		{
+			movesList.push_back(shift);
+		}
+		shift = shift << 1;
+	}
+	std::cout << "player board" << std::hex << playerBoard << "computer board " << std::hex << computerBoard << "\n ";
+	std::cout << "moves list size " << movesList.size() << "moves" << std::hex << movesBoard <<"\n ";
+	for (int i = 0; i < movesList.size(); i++)
+	{
+		std::cout << "for move" << std::hex << movesList[i] << "\n ";
+		result = std::min(result, maxMove((computerBoard&~flipPieces(playerBoard, computerBoard, movesList[i])), flipPieces(playerBoard, computerBoard, movesList[i]), maxDepth, (currentDepth + 1)));
+	}
+	return result;
+}
+int maxMove(BITBOARD computerBoard, BITBOARD playerBoard, int maxDepth, int currentDepth)
+{
+	std::cout << "into MAX current depth " << currentDepth << "max depth" << maxDepth << " \n";
+	
+	if (maxDepth == currentDepth)
+	{
+		std::cout << "max depth in max! \n";
+		std::cout << countPoints(computerBoard) << "\n";
+		std::cout << std::hex << computerBoard << "\n";
+		return countPoints(computerBoard);
+	}
+	int result = 0;
+	BITBOARD movesBoard = showMyValidMoves(computerBoard, playerBoard);
+	std::cout << "!!!!!1player b " << std::hex << playerBoard << "computer b: " << std::hex << computerBoard << "moves" << std::hex << showMyValidMoves(computerBoard,playerBoard)<<"\n ";
+	
+	BITBOARD shift = 0x0000000000000001;
+	std::vector<BITBOARD> movesList;
+	while (shift != 0)
+	{
+		if ((shift&movesBoard) != 0)
+		{
+			movesList.push_back(shift);
+		}
+		shift = shift << 1;
+	}
+	std::cout << "player board" << std::hex << playerBoard << "computer board " << std::hex << computerBoard << "\n ";
+	std::cout << "moves list size " << movesList.size() << "moves" <<std::hex<< movesBoard << "\n ";
+	for (int i = 0; i < movesList.size(); i++)
+	{
+		std::cout << "for move" << std::hex << movesList[i] << "\n ";
+		result = std::max(result, minMove(flipPieces(computerBoard, playerBoard, movesList[i]), (playerBoard&~flipPieces(computerBoard, playerBoard, movesList[i])), maxDepth, (currentDepth + 1)));
+	}
+	return result;
+}
+/*
+int minMove(BITBOARD myBoard, BITBOARD opponentBoard, int maxDepth, int currentDepth)
+{
+	if (maxDepth == currentDepth)
+	{
+		return countPoints(myBoard);
+	}
+	int result = 65;
+	BITBOARD movesBoard = showMyValidMoves(myBoard, opponentBoard);
+	BITBOARD shift = 0x0000000000000001;
+	std::vector<BITBOARD> movesList;
+	while (shift != 0)
+	{
+		if ((shift&movesBoard) != 0)
+		{
+			movesList.push_back(shift);
+		}
+		shift = shift << 1;
+	}
+	for (int i = 0; i < movesList.size(); i++)
+	{
+		result = std::min(result, maxMove(flipPieces(myBoard, opponentBoard, movesList[i]), opponentBoard, maxDepth, currentDepth + 1));
+	}
+	return result;
+}
+*/
+/*
+int maxMove(BITBOARD myBoard, BITBOARD opponentBoard,int maxDepth,int currentDepth)
+{
+	if (maxDepth == currentDepth)
+	{
+		return countPoints(myBoard);
+	}
+	int result = 0;
+	BITBOARD movesBoard = showMyValidMoves(myBoard, opponentBoard);
+	BITBOARD shift = 0x0000000000000001;
+	std::vector<BITBOARD> movesList;
+	while (shift != 0)
+	{
+		if ((shift&movesBoard) != 0)
+		{
+			movesList.push_back(shift);
+		}
+		shift = shift << 1;
+	}
+	for (int i = 0; i < movesList.size(); i++)
+	{
+		result = std::max(result, minMove(flipPieces(myBoard, opponentBoard, movesList[i]),opponentBoard,maxDepth,currentDepth+1));
+	}
+	return result;
+}
+*/
+
+
+
+BITBOARD easyAlg(BITBOARD myBoard, BITBOARD opponentBoard)
+{
+
+	std::cout << "jestem w easy alg" << "\n";
+	std::cout << "black:" <<std::hex<< myBoard <<"\n";
+	std::cout << "white:" << std::hex << opponentBoard << "\n";
+
+	BITBOARD bestBoard = 0UL;
+	int myScore = 0;
+	int count = 0;
+	BITBOARD shift = 0x0000000000000001;
+	BITBOARD validMoves = showMyValidMoves(myBoard, opponentBoard);
+	if (validMoves == 0UL)
+		return 0UL;
+
+	std::cout << "mozliwe ruchy ai:" << std::hex << validMoves << "\n";
+
+
+	while (shift != 0)
+	{
+		std::cout << "jestem w petli, wart shift:" << std::hex<< shift << "\n";
+		
+		if ((shift&validMoves) != 0)
+		{
+			count = count + 1;
+			if ((shift&validMoves) == (0x200 | 0x4000 | 0x2000000000000 | 0x40000000000000))
+			{
+				int score = 1;
+				if (score > myScore)
+				{
+					myScore = score;
+					bestBoard = shift&validMoves;
+				}
+
+			}
+			else if ((shift&validMoves) == (0x8000000000000000 | 0x100000000000000 | 0x2000000000000 | 0x40000000000000))
+			{
+				int score = 64;
+				if (score > myScore)
+				{
+					myScore = score;
+					bestBoard = shift&validMoves;
+				}
+
+			}
+			else
+			{
+				BITBOARD flipped = flipPieces(myBoard, opponentBoard, (shift&validMoves));
+				int score = countPoints(flipped);
+				if (score > myScore)
+				{
+					myScore = score;
+					bestBoard = shift&validMoves;
+				}
+
+			}
+		
+		}
+		shift = (shift << 1);
+	}
+	std::cout << "najlepszy ruch dla ai:" << std::hex << bestBoard << "\n";
+	return bestBoard;
+
+
+}
+
 int main()
 {
+
+	BITBOARD w = 0x100818080000;
+	BITBOARD b = 0x201000000000;
+	BITBOARD m = showMyValidMoves(b , w);
+	std::cout << std::hex << "White: " << w << "Black: " << b << "Mata: " << m << "\n";
+	//std::exit;
     sf::RenderWindow window( sf::VideoMode( 400, 400 ), "REVERSI" );
 
 	std::string filename_black = "black1.png";
@@ -300,11 +582,17 @@ int main()
 	std::string filename_black_s = "black_s.png";
 	std::string filename_white_s = "white_s.png";
 
+	//std::string filename_black = "black2.png";
+	//std::string filename_white = "white2.png";
+	//std::string filename_black_s = "black_s2.png";
+	//std::string filename_white_s = "white_s2.png";
+
 	sf::Texture black_texture;
 	sf::Texture white_texture;
 	sf::Texture black_texture_s;
 	sf::Texture white_texture_s;
 	sf::Texture board_texture;
+	sf::Texture game_over_texture;
 
 	sf::Sprite ** black_table = new sf::Sprite*[64];
 	sf::Sprite ** white_table = new sf::Sprite*[64];
@@ -313,10 +601,39 @@ int main()
 	sf::Sprite ** white_table_s = new sf::Sprite*[64];
 
 	sf::Sprite boardImage;
+	sf::Sprite boardGameOver;
+
+
+	sf::Font font;
+	sf::Text score_white;
+	sf::Text score_black;
+	sf::Text win_lost;
+
+	if (!font.loadFromFile("HoboStd.otf"))
+	{
+		std::cout << "Unable to load font \n";
+	}
+	score_white.setFont(font);
+	score_black.setFont(font);
+	win_lost.setFont(font);
+	score_white.setColor(sf::Color::White);
+	score_black.setColor(sf::Color::Black);
+	win_lost.setColor(sf::Color::Red);
+	score_white.setPosition(105, 315);
+	score_black.setPosition(250, 315);
+	win_lost.setPosition(100, 200);
 
 	if(!board_texture.loadFromFile("board1.png"))
 		std::cout<<"Unable to load board_texture \n";
 	boardImage.setTexture(board_texture);
+
+	if (!game_over_texture.loadFromFile("board1go.png"))
+		std::cout << "Unable to load game_over_texture \n";
+	boardGameOver.setTexture(game_over_texture);
+	
+	//if (!board_texture.loadFromFile("board2.png"))
+		//std::cout << "Unable to load board_texture \n";
+	//boardImage.setTexture(board_texture);
 
 	createPieces(black_table);
 	createPieces(white_table);
@@ -327,10 +644,21 @@ int main()
 	setPieces(filename_black_s.c_str(),black_texture_s,black_table_s);
 	setPieces(filename_white_s.c_str(), white_texture_s, white_table_s);
 
-	BITBOARD START_POSITION_white = 0x810000000;
-	BITBOARD START_POSITION_black = 0x1008000000;
+	BITBOARD White = 0x810000000;
+	BITBOARD Black = 0x1008000000;
 
 	BITBOARD lolo = flipPieces(0x3E2222223E00,0x1C141C0000,0x8000000);
+	bool gameOver = false;
+	bool playerTurn = true;
+	BITBOARD playerMove = 0UL;
+	BITBOARD validPlayerMoves;
+	BITBOARD potentialplayerMove = 0UL;
+	BITBOARD potentialaiMove = 0UL;
+	int whiteScore = 0;
+	int blackScore = 0;
+
+	bool AICanMove = true;
+	bool playerCanMove = true;
 
     while( window.isOpen() )
     {
@@ -341,26 +669,195 @@ int main()
 			{
                  window.close();
 			}
+			if (event.type == sf::Event::MouseButtonPressed)
+			{
+
+				std::cout << "mouse event"<<"\n";
+				if (playerTurn == true)
+				{
+					int mouseX = sf::Mouse::getPosition(window).x;
+					std::cout << "x:" << mouseX << "\n";
+					int mouseY = sf::Mouse::getPosition(window).y;
+					std::cout << "y:" << mouseY << "\n";
+					potentialplayerMove = getBoardPosition(mouseX, mouseY);
+					std::cout << "gracz chce postawic tu: " << std::hex << potentialplayerMove << "\n";
+
+					validPlayerMoves = showMyValidMoves(White, Black);
+					std::cout << "gracz moze postawic w tych miejscach" << std::hex << validPlayerMoves << "\n";
+					if (validPlayerMoves != 0)
+					{
+						if ((validPlayerMoves&potentialplayerMove) != 0)
+						{
+
+							std::cout << "zaraz zamienie wart dla gracza" << "\n";
+							playerMove = potentialplayerMove;
+
+							std::cout << "white przed:" << std::hex << White << "\n";
+							White = flipPieces(White, Black, playerMove);
+							Black = (Black&~White);
+							std::cout << "white po:" << std::hex << White << "\n";
+							playerTurn = false;
+							AICanMove = true;
+						}
+					}
+					else
+					{
+						playerCanMove = false;
+						playerTurn = false;
+						if ((playerCanMove == false) && (AICanMove == false))
+						{
+						gameOver = true;
+						std::cout << "GAME OVER!!!!!!!!!! \n";
+						blackScore = countPoints(Black);
+						whiteScore = countPoints(White);
+						std::cout << "Punkty czarnego:" << std::dec << countPoints(Black) << "\n";
+						std::cout << "Punkty bialego:" << std::dec << countPoints(White) << "\n";
+						//system("pause");						//break;
+
+						}
+
+
+						
+					}
+					
+				}
+			}
            
         } 
-        //window.clear();
+        window.clear();
 		window.draw(boardImage);
 
-	//drawBoard(START_POSITION_black, black_table, window);
-	//drawBoard(START_POSITION_white, white_table, window);
-		//drawBoard(0x80000000000, black_table, window);
+		drawBoard(White, white_table, window);
+		drawBoard(Black, black_table, window);
 		
-		drawBoard(0x3E2222223E00 & (~lolo), white_table, window);
-		drawBoard(lolo, black_table, window);
-	//BITBOARD test = showMyValidMoves(START_POSITION_black, START_POSITION_white);
 
-	
+		if (playerTurn == true)
+		{
+			drawBoard(showMyValidMoves(White, Black), white_table_s, window);
+			if (showMyValidMoves(White, Black) == 0)
+			{
+				playerCanMove = false;
 
-//	drawBoard(test, black_table_s, window);
+			}
 
+		}
 		window.display();
+		if (playerTurn == false)
+		{
+
+			if (gameOver == false)
+			{
+
+				//potentialaiMove = easyAlg(Black, White);
+				potentialaiMove = minMax(Black, White, 3); //black =computer
+				std::cout << "potential move:" << std::hex << potentialaiMove << "\n";
+
+				if (potentialaiMove != 0)
+				{
+
+					std::cout << "ai move:" << std::hex << potentialaiMove << "\n";
+
+					drawBoard(potentialaiMove, black_table, window);
+					//window.display();
+					Sleep(500);
+
+					Black = flipPieces(Black, White, potentialaiMove);
+					White = (White&~Black);
+
+					playerTurn = true;
+					playerCanMove = true;
+
+
+				}
+				if (potentialaiMove == 0)
+				{
+					playerTurn = true;
+					AICanMove = false;
+					if ((AICanMove == false) && (playerCanMove == false))
+					{
+					gameOver = true;
+
+					std::cout << "GAME OVER" << "\n";
+					blackScore = countPoints(Black);
+					whiteScore = countPoints(White);
+					std::cout << "Punkty czarnego:" << std::dec<<countPoints(Black) << "\n";
+					std::cout << "Punkty bialego:" << std::dec << countPoints(White) << "\n";
+					//system("pause");
+
+					}
+					
+
+				}
+			}
+			
+			
+
+		}
+		if (playerTurn == true)
+		{
+			
+			if (showMyValidMoves(White, Black) == 0)
+			{
+				playerCanMove = false;
+				playerTurn = false;
+
+			}
+
+		}
+		if (gameOver==true)
+		{
+			break;
+
+		}
+
+		
 		
 
     } 
+
+	while (window.isOpen())
+	{
+		sf::Event event;
+		while (window.pollEvent(event))
+		{
+			if (event.type == sf::Event::Closed)
+			{
+				window.close();
+			}
+		}
+
+		window.clear();
+		window.draw(boardGameOver);
+
+		window.draw(*white_table[9]);
+		std::string strWhite = std::to_string(whiteScore);
+		score_white.setString(strWhite);
+
+		window.draw(*black_table[12]);
+		std::string strBlack = std::to_string(blackScore);
+		score_black.setString(strBlack);
+
+		if (blackScore > whiteScore)
+		{
+			win_lost.setString("YOU LOST");
+			window.draw(win_lost);
+
+		}
+		if (blackScore < whiteScore)
+		{
+			win_lost.setString("YOU WON");
+			window.draw(win_lost);
+		}
+
+		//score_black.setString(strBlack);
+		window.draw(score_black);
+		window.draw(score_white);
+		window.display();
+
+
+	}
+
+
+
     return 0;
 }
